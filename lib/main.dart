@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,30 +35,115 @@ class MyAppState extends ChangeNotifier {
     current = WordPair.random();
     notifyListeners();
   }
+
+  // stores liked words
+  var liked = <WordPair>[];
+
+  void toggleFavorite() {
+    if(liked.contains(current)) {
+      liked.remove(current);
+    } else {
+      liked.add(current);
+    }
+    notifyListeners();
+  }
 }
 
 class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          SafeArea(
+            child: NavigationRail(
+              extended: false,
+              destinations: [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home),
+                  label: Text('Home')
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.favorite),
+                  label: Text('Liked Words')
+                )
+              ], 
+              selectedIndex: 0,
+              onDestinationSelected: (value) {
+               print('selected: $value'); 
+              },
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: GeneratorPage(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class GeneratorPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var pair = appState.current;
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Text('A random AWESOME idea:'),
-          BigCard(pair: pair),
+    // Add Icon
+    IconData icon;
+    if(appState.liked.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
 
-          // Elevatedbutton
-          ElevatedButton(
-            onPressed: () {
-              // get next word
-              appState.getNext();
-              print('button pressed!!');
-            }, 
-            child: Text('Next Word'),
-          ),
-        ],
+    return Scaffold(
+      body: Center(
+        child: Column(
+          // centers column
+          mainAxisAlignment: MainAxisAlignment.center, 
+
+          children: [
+            BigCard(pair: pair),
+
+            // padding space in between
+            SizedBox(height: 10,),
+
+            // Elevatedbuttons
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    // get next word
+                    appState.getNext();
+                    // print('button pressed!!');
+                  }, 
+                  child: Text('Next Word'),
+                ),
+
+                // Space In Between
+                SizedBox(width: 10),
+
+                // Like Button
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // get next word
+                    // appState.getNext();
+                    appState.toggleFavorite();
+                    // print('button pressed!!');
+                  }, 
+                  icon: Icon(icon),
+                  label: Text('Like'),
+                ),
+              ],
+            ),
+
+          ],
+        ),
       ),
     );
   }
@@ -72,6 +159,21 @@ class BigCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(pair.asLowerCase);
+    var theme = Theme.of(context);
+    var style = theme.textTheme.displayMedium!.copyWith(
+      color: theme.colorScheme.onPrimary,
+    );
+
+    return Card(
+      color: theme.colorScheme.primary,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Text(
+          pair.asLowerCase, 
+          style: style,
+          semanticsLabel: pair.asPascalCase,  // for screen readers
+        ),
+      ),
+    );
   }
 }
